@@ -72,7 +72,7 @@ func parseProfiles(data []byte) (profiles, error) {
 	scanner.Buffer(make([]byte, 4096), maxFileSize+1)
 	for line := 1; scanner.Scan(); line++ {
 		text := strings.TrimSpace(scanner.Text())
-		if text == "" || strings.HasPrefix(text, "#") {
+		if text == "" || strings.HasPrefix(text, "#") || strings.HasPrefix(text, ";") {
 			continue
 		}
 		invalid := func() (profiles, error) {
@@ -83,7 +83,7 @@ func parseProfiles(data []byte) (profiles, error) {
 				return invalid()
 			}
 			name := text[1 : len(text)-1]
-			if validProfileName(name) != nil && all[name] != nil {
+			if validProfileName(name) != nil || all[name] != nil {
 				return invalid()
 			}
 			current = profile{}
@@ -92,7 +92,7 @@ func parseProfiles(data []byte) (profiles, error) {
 		}
 		key, value, ok := strings.Cut(text, "=")
 		key, value = strings.TrimSpace(key), strings.TrimSpace(value)
-		if !ok || current == nil {
+		if !ok || current == nil || !knownSetting(key) {
 			return invalid()
 		}
 		if _, exists := current[key]; exists {
@@ -104,7 +104,8 @@ func parseProfiles(data []byte) (profiles, error) {
 				return invalid()
 			}
 			value = decoded
-		} else if !validValue(value) {
+		}
+		if !validValue(value) {
 			return invalid()
 		}
 		current[key] = value
