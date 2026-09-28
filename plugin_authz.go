@@ -163,12 +163,12 @@ func (m AuthzMiddleware) authenticate(w http.ResponseWriter, r *http.Request) (c
 	if err := gatekeeper.Authenticate(response, r, ar); err != nil {
 		w.Header().Set("Cache-Control", "no-store")
 		return caddyauth.User{}, false, errors.ErrAuthorizationFailed.WithArgs(
-			err, getAuthorizationDetails(r, ar),
+			getAuthorizationDetails(r, ar), err,
 		)
 	}
 
 	if ar.Response.Bypassed {
-		return caddyauth.User{}, false, nil
+		return caddyauth.User{}, ar.Response.Bypassed, nil
 	}
 
 	// A nil error does not imply authorization. A closed gatekeeper, for
@@ -190,16 +190,16 @@ func (m AuthzMiddleware) authenticate(w http.ResponseWriter, r *http.Request) (c
 			"roles": ar.Response.User["roles"].(string),
 		},
 	}
-	if v, exists := ar.Response.User["sub"]; exists {
+	if v, exists := ar.Response.User["id"]; exists {
 		u.ID = v.(string)
 	}
-	for _, k := range []string{"claim_id", "email", "name", "issuer", "origin", "realm"} {
+	for _, k := range []string{"claim_id", "sub", "email", "name", "issuer", "origin", "realm"} {
 		if v, exists := ar.Response.User[k]; exists {
 			u.Metadata[k] = v.(string)
 		}
 	}
 
-	if v, exists := ar.Response.User["preferred_username"]; exists {
+	if v, exists := ar.Response.User["userinfo|preferred_username"]; exists {
 		u.Metadata["username"] = v.(string)
 	}
 
