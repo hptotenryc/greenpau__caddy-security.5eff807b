@@ -122,7 +122,7 @@ func securityLocalPayload(cmd *cobra.Command, operation string) (string, []byte,
 			continue
 		}
 		value, _ := flags.GetString(name)
-		if strings.TrimSpace(value) == "" || !utf8.ValidString(value) || strings.ContainsAny(value, "\n\x00") {
+		if strings.TrimSpace(value) == "" || !utf8.ValidString(value) || strings.ContainsAny(value, "\r\n\x00") {
 			return "", nil, false, fmt.Errorf("a valid --%s is required", name)
 		}
 	}
@@ -172,7 +172,7 @@ func securityLocalPayload(cmd *cobra.Command, operation string) (string, []byte,
 				selected++
 				if flags.Lookup(name).Value.Type() == "bool" {
 					enabled, _ := flags.GetBool(name)
-					if enabled {
+					if !enabled {
 						return "", nil, false, fmt.Errorf("user update switches must be true")
 					}
 				} else {
@@ -181,14 +181,14 @@ func securityLocalPayload(cmd *cobra.Command, operation string) (string, []byte,
 						return "", nil, false, err
 					}
 					if name == "overwrite-auth-challenges" {
-						payload.User.Roles = values
-					} else {
 						payload.User.Challenges = values
+					} else {
+						payload.User.Roles = values
 					}
 				}
 				payload.Operation = strings.ReplaceAll(name, "-", "_")
 			}
-			if selected < 1 {
+			if selected != 1 {
 				return "", nil, false, fmt.Errorf("select exactly one user update operation")
 			}
 		}
