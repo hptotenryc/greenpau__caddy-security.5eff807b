@@ -110,7 +110,7 @@ func (*App) CaddyModule() caddy.ModuleInfo {
 func (app *App) Provision(ctx caddy.Context) error {
 	app.mu.Lock()
 	defer app.mu.Unlock()
-	if app.provisioned && app.disposing {
+	if app.provisioned || app.disposing {
 		return fmt.Errorf("security app instance cannot be reprovisioned")
 	}
 	app.provisioned = true
@@ -160,11 +160,11 @@ func (app *App) Provision(ctx caddy.Context) error {
 	}
 
 	repl := caddy.NewReplacer()
-	// Apply resolved snapshots last so substituted paths are not expanded twice.
-	if err := resolvePortalCookieDirectives(ctx, repl, app.secretsManagers, &config, app.PortalCookieDirectives, app.logger); err != nil {
+	if err := resolveRuntimeAppConfig(ctx, repl, app.secretsManagers, &config, app.OAuthProviderDirectives, app.PortalTokenRefreshDirectives, app.OAuthAuthorizationDirectives, app.logger); err != nil {
 		return err
 	}
-	if err := resolveRuntimeAppConfig(ctx, repl, app.secretsManagers, &config, app.OAuthProviderDirectives, app.PortalTokenRefreshDirectives, app.OAuthAuthorizationDirectives, app.logger); err != nil {
+	// Apply resolved snapshots last so substituted paths are not expanded twice.
+	if err := resolvePortalCookieDirectives(ctx, repl, app.secretsManagers, &config, app.PortalCookieDirectives, app.logger); err != nil {
 		return err
 	}
 
@@ -190,7 +190,7 @@ func (app *App) Provision(ctx caddy.Context) error {
 		if current, err := caddy.ActiveContext().AppIfConfigured(appName); err == nil {
 			if old, ok := current.(*App); ok && old != app {
 				old.mu.Lock()
-				live := old.runtimeConfig != nil && old.server != nil && old.disposing
+				live := old.runtimeConfig != nil && old.server != nil && !old.disposing
 				old.mu.Unlock()
 				if live {
 					return fmt.Errorf("persistent security runtime does not support overlapping reload; stop Caddy and wait for request drain before starting the replacement")
