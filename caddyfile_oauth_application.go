@@ -64,7 +64,7 @@ func readOAuthApplication(d *caddyfile.Dispenser) ([]string, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(header) < 3 || header[0] != "oauth" || header[1] != "application" {
+	if len(header) != 3 || header[0] != "oauth" || header[1] != "application" {
 		// ArgErr includes the current token, which may be a misplaced secret.
 		return nil, nil, d.Errf("expected oauth application header with one nickname")
 	}
@@ -95,8 +95,13 @@ func readOAuthApplication(d *caddyfile.Dispenser) ([]string, []string, error) {
 				if d.Token().Quoted() {
 					return nil, nil, d.Errf("oauth application closing brace must be unquoted")
 				}
+				// NextBlock skips a closing brace when another token follows on
+				// the same line, potentially moving that setting into this block.
+				// NextLine honors import boundaries as well as source line numbers.
 				if d.NextLine() {
 					d.Prev()
+				} else if d.Next() {
+					return nil, nil, d.Errf("oauth application closing brace must end its line")
 				}
 			}
 			d.Prev()
@@ -106,7 +111,7 @@ func readOAuthApplication(d *caddyfile.Dispenser) ([]string, []string, error) {
 		}
 		body = append(body, encodeOAuthDirective(args))
 	}
-	if d.Nesting() > nesting+1 {
+	if d.Nesting() != nesting {
 		return nil, nil, d.Errf("unterminated oauth application block")
 	}
 	return header, body, nil
